@@ -662,8 +662,7 @@ class TestSlabGenerator(MatSciTest):
     def test_disordered_slab(self):
         # Test that generation of a disordered Slab is possible
         comp = Composition({"Na": 0.5, "K": 0.5})
-        struct = Structure([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [comp],
-                           np.zeros((1, 3), dtype=np.float64))
+        struct = Structure([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [comp], np.zeros((1, 3), dtype=np.float64))
         slabs = SlabGenerator(struct, (0, 0, 1), 1, 0).get_slabs()
         assert slabs[0].sites[0].species == comp
 
