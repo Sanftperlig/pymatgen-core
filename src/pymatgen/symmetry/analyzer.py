@@ -803,7 +803,7 @@ class SpacegroupAnalyzer:
                         a, b, c = lengths
                         alpha_degrees = angles[0]
 
-                    alpha_radians = math.pi * alpha_degrees / 180
+                    alpha_radians = math.radians(alpha_degrees)
                     new_matrix = [
                         [a, 0, 0],
                         [0, b, 0],
@@ -840,7 +840,7 @@ class SpacegroupAnalyzer:
                         transf[0][tp3[0]] = 1
                         transf[1][tp3[1]] = 1
 
-                    alpha = math.pi * alpha / 180
+                    alpha = math.radians(alpha)
                     new_matrix = [
                         [a, 0, 0],
                         [0, b, 0],
@@ -874,7 +874,7 @@ class SpacegroupAnalyzer:
             lattice = struct.lattice
 
             a, b, c = lattice.lengths
-            alpha, beta, gamma = (math.pi * i / 180 for i in lattice.angles)
+            alpha, beta, gamma = (math.radians(i) for i in lattice.angles)
             new_matrix = None
             test_matrix = [
                 [a, 0, 0],
@@ -953,7 +953,7 @@ class SpacegroupAnalyzer:
 
             lattice = Lattice(new_matrix)  # type:ignore[arg-type]
 
-        new_coords = np.dot(transf, np.transpose(struct.frac_coords)).T  # type: ignore[arg-type]
+        new_coords = struct.frac_coords @ transf.T  # type: ignore[arg-type]
         new_struct = Structure(
             lattice,
             struct.species_and_occu,

@@ -10,6 +10,7 @@ from pytest import approx
 from spglib import SpglibDataset
 
 from pymatgen.core import Lattice, Molecule, PeriodicSite, Site, Species, Structure
+from pymatgen.core.composition import Composition
 from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.symmetry.analyzer import (
     PointGroupAnalyzer,
@@ -465,13 +466,14 @@ class TestSpacegroupAnalyzer(MatSciTest):
 
     def test_hexagonal_almost_rhombohedral(self):
         """Test that #4679 is fixed (hexagonal lattice with a close to c is not rhombohedral)."""
+        species = [Composition({"Gd": 0.5}), Composition({"Se": 0.5}), Composition({"F": 0.5})]
         structure = Structure(
             lattice=[
                 [4.0570938, 0.0, 0.0],
                 [0.0, 4.0572993, 0.0],
                 [0.0, -2.02864965, 3.51372426],
             ],
-            species=["Gd", "Se", "F"],
+            species=species,
             coords=[
                 [0.67496701, 2.02864967, 1.17124141],
                 [2.70478423, -2.02864966e-8, 2.34248285],
@@ -481,8 +483,13 @@ class TestSpacegroupAnalyzer(MatSciTest):
         )
 
         sga = SpacegroupAnalyzer(structure, symprec=0.01)
+        primitive = sga.get_primitive_standard_structure()
         # 3 atoms expected in primitive rhombohedral cell (not 9)
-        assert len(sga.get_primitive_standard_structure()) == 3
+        assert len(primitive) == 3
+
+        # Check that sites are still half-occupied
+        # (but do not force a specific site ordering)
+        assert primitive.sites[0].species in species
 
     def test_bad_structure(self):
         struct = Structure(Lattice.cubic(5), ["H", "H"], [[0.0, 0.0, 0.0], [0.001, 0.0, 0.0]])
