@@ -512,6 +512,7 @@ class SpacegroupAnalyzer:
     def get_conventional_to_primitive_transformation_matrix(
         self,
         international_monoclinic: bool = True,
+        conv_lattice: Lattice | None = None,
     ) -> NDArray:
         """Get the transformation matrix to transform a conventional unit cell to a
         primitive cell according to certain standards. The standards are defined in
@@ -522,11 +523,14 @@ class SpacegroupAnalyzer:
         Args:
             international_monoclinic (bool): Whether to convert to proper international convention
                 such that beta is the non-right angle.
+            conv_lattice (Lattice): Conventional Lattice of the structure, if known.
 
         Returns:
             Transformation matrix to go from conventional to primitive cell
         """
-        conv = self.get_conventional_standard_structure(international_monoclinic=international_monoclinic)
+        if conv_lattice is None:
+            conv = self.get_conventional_standard_structure(international_monoclinic=international_monoclinic)
+            conv_lattice = conv.lattice
         lattype = self.get_lattice_type()
 
         if "P" in self.get_space_group_symbol() or lattype == "hexagonal":
@@ -535,8 +539,7 @@ class SpacegroupAnalyzer:
         if lattype == "rhombohedral":
             # Check if the conventional representation is hexagonal or
             # rhombohedral
-            lengths = conv.lattice.lengths
-            if abs(lengths[0] - lengths[2]) < 1e-4:
+            if abs(conv_lattice.lengths[0] - conv_lattice.lengths[2]) < 1e-4:
                 return np.eye(3)
             return np.array([[-1, 1, 1], [2, 1, 1], [-1, -2, 1]], dtype=np.float64) / 3
 
@@ -589,7 +592,7 @@ class SpacegroupAnalyzer:
             return conv
 
         transf = self.get_conventional_to_primitive_transformation_matrix(
-            international_monoclinic=international_monoclinic
+            international_monoclinic=international_monoclinic, conv_lattice=conv.lattice
         )
 
         new_sites: list[PeriodicSite] = []
@@ -611,7 +614,7 @@ class SpacegroupAnalyzer:
             lengths = prim.lattice.lengths
             angles = prim.lattice.angles
             a = lengths[0]
-            alpha = math.pi * angles[0] / 180
+            alpha = math.radians(angles[0])
             new_matrix = [
                 [a * cos(alpha / 2), -a * sin(alpha / 2), 0],
                 [a * cos(alpha / 2), a * sin(alpha / 2), 0],
