@@ -606,7 +606,7 @@ class SpacegroupAnalyzer:
             if not any(map(new_s.is_periodic_image, new_sites)):
                 new_sites.append(new_s)
 
-        if lattice == "rhombohedral":
+        if lattype == "rhombohedral":
             prim = Structure.from_sites(new_sites)
             lengths = prim.lattice.lengths
             angles = prim.lattice.angles
