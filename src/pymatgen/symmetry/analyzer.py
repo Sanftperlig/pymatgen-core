@@ -235,7 +235,7 @@ class SpacegroupAnalyzer:
 
     def get_lattice_type(self) -> LatticeType:
         """Get the lattice for the structure, e.g. (triclinic, orthorhombic, cubic,
-        etc.).This is the same as the crystal system with the exception of the
+        etc.). This is the same as the crystal system with the exception of the
         hexagonal/rhombohedral lattice.
 
         Raises:
@@ -533,8 +533,8 @@ class SpacegroupAnalyzer:
             conv_lattice = conv.lattice
         lattype = self.get_lattice_type()
 
-        if "P" in self.get_space_group_symbol() or lattype == "hexagonal":
-            return np.eye(3)
+        if self.get_space_group_symbol().startswith("P"):
+            return np.eye(3, dtype=np.float64)
 
         if lattype == "rhombohedral":
             # Check if the conventional representation is hexagonal or
@@ -543,18 +543,18 @@ class SpacegroupAnalyzer:
                 return np.eye(3)
             return np.array([[-1, 1, 1], [2, 1, 1], [-1, -2, 1]], dtype=np.float64) / 3
 
-        if "I" in self.get_space_group_symbol():
+        if self.get_space_group_symbol().startswith("I"):
             return np.array([[-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=np.float64) / 2
 
-        if "F" in self.get_space_group_symbol():
+        if self.get_space_group_symbol().startswith("F"):
             return np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=np.float64) / 2
 
-        if "C" in self.get_space_group_symbol() or "A" in self.get_space_group_symbol():
+        if self.get_space_group_symbol().startswith(("C", "A")):
             if self.get_crystal_system() == "monoclinic":
                 return np.array([[1, 1, 0], [-1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
             return np.array([[1, -1, 0], [1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
 
-        return np.eye(3)
+        return np.eye(3, dtype=np.float64)
 
     @cite_conventional_cell_algo
     def get_primitive_standard_structure(
@@ -588,7 +588,7 @@ class SpacegroupAnalyzer:
         )
         lattype = self.get_lattice_type()
 
-        if self.get_space_group_symbol().startswith("P") or lattype == "hexagonal":
+        if self.get_space_group_symbol().startswith("P"):
             return conv
 
         transf = self.get_conventional_to_primitive_transformation_matrix(
