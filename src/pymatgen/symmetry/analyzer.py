@@ -466,8 +466,8 @@ class SpacegroupAnalyzer:
         Args:
             mesh (3x1 array): The number of kpoint for the mesh needed in
                 each direction
-            is_shift (3x1 array): Whether to shift the kpoint grid. (1, 1,
-            1) means all points are shifted by 0.5, 0.5, 0.5.
+            is_shift (3x1 array): Whether to shift the kpoint grid. (1, 1, 1)
+                means all points are shifted by 0.5, 0.5, 0.5.
 
         Returns:
             A list of irreducible kpoints and their weights as a list of
@@ -493,8 +493,8 @@ class SpacegroupAnalyzer:
         Args:
             mesh (3x1 array): The number of kpoint for the mesh needed in
                 each direction
-            is_shift (3x1 array): Whether to shift the kpoint grid. (1, 1,
-            1) means all points are shifted by 0.5, 0.5, 0.5.
+            is_shift (3x1 array): Whether to shift the kpoint grid. (1, 1, 1)
+                means all points are shifted by 0.5, 0.5, 0.5.
 
         Returns:
             A tuple containing two numpy.ndarray. The first is the mesh in
