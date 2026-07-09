@@ -514,7 +514,7 @@ class SpacegroupAnalyzer:
         international_monoclinic: bool = True,
     ) -> NDArray:
         """Get the transformation matrix to transform a conventional unit cell to a
-        primitive cell according to certain standards the standards are defined in
+        primitive cell according to certain standards. The standards are defined in
         Setyawan, W., & Curtarolo, S. (2010). High-throughput electronic band structure
         calculations: Challenges and tools. Computational Materials Science, 49(2),
         299-312. doi:10.1016/j.commatsci.2010.05.010.
@@ -527,12 +527,12 @@ class SpacegroupAnalyzer:
             Transformation matrix to go from conventional to primitive cell
         """
         conv = self.get_conventional_standard_structure(international_monoclinic=international_monoclinic)
-        lattice = self.get_lattice_type()
+        lattype = self.get_lattice_type()
 
-        if "P" in self.get_space_group_symbol() or lattice == "hexagonal":
+        if "P" in self.get_space_group_symbol() or lattype == "hexagonal":
             return np.eye(3)
 
-        if lattice == "rhombohedral":
+        if lattype == "rhombohedral":
             # Check if the conventional representation is hexagonal or
             # rhombohedral
             lengths = conv.lattice.lengths
@@ -633,7 +633,6 @@ class SpacegroupAnalyzer:
                 )
                 if not any(map(new_s.is_periodic_image, new_sites)):
                     new_sites.append(new_s)
-            return Structure.from_sites(new_sites)
 
         return Structure.from_sites(new_sites)
 
