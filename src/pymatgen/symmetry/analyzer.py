@@ -699,9 +699,8 @@ class SpacegroupAnalyzer:
                 for idx in range(2):
                     transf[idx][sorted_dic[idx]["orig_index"]] = 1
                 c = lattice.abc[2]
-            elif self.get_space_group_symbol().startswith(
-                "A"
-            ):  # change to C-centering to match Setyawan/Curtarolo convention
+            # change to C-centering to match Setyawan/Curtarolo convention
+            elif self.get_space_group_symbol().startswith("A"):
                 transf[2] = [1, 0, 0]
                 a, b = sorted(lattice.abc[1:])
                 sorted_dic = sorted(
@@ -743,10 +742,13 @@ class SpacegroupAnalyzer:
             # check first if we have the refined structure shows a rhombohedral
             # cell
             # if so, make a supercell
-            a, b, c = lattice.abc
-            if np.all(np.abs([a - b, c - b, a - c]) < 0.001):
+            if np.allclose(lattice.abc, lattice.a, atol=1e-3, rtol=0.0) and np.allclose(
+                lattice.angles, lattice.alpha, atol=1e-2, rtol=0.0
+            ):
                 struct.make_supercell(((1, -1, 0), (0, 1, -1), (1, 1, 1)))
                 a, b, c = sorted(struct.lattice.abc)
+            else:
+                a, b, c = lattice.abc
 
             if abs(b - c) < 0.001:
                 a, c = c, a
@@ -755,7 +757,6 @@ class SpacegroupAnalyzer:
                 [a / 2, a * math.sqrt(3) / 2, 0],
                 [0, 0, c],
             ]
-            lattice = Lattice(new_matrix)
             transf = np.eye(3, dtype=np.float64)  # type:ignore[assignment]
 
         elif latt_type == "monoclinic":
