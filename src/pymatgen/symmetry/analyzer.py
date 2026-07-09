@@ -775,7 +775,7 @@ class SpacegroupAnalyzer:
                 b = sorted_dic[1]["length"]
                 c = lattice.abc[2]
                 new_matrix = None
-                for tp2 in itertools.permutations(list(range(2)), 2):
+                for tp2 in itertools.permutations(range(2), 2):
                     m = lattice.matrix
                     latt2 = Lattice([m[tp2[0]], m[tp2[1]], m[2]])
                     lengths = latt2.lengths
@@ -819,7 +819,7 @@ class SpacegroupAnalyzer:
                 # keep the ones with the non-90 angle=alpha and b<c
                 new_matrix = None
 
-                for tp3 in itertools.permutations(list(range(3)), 3):
+                for tp3 in itertools.permutations(range(3), 3):
                     m = lattice.matrix
                     a, b, c, alpha, beta, gamma = Lattice([m[tp3[0]], m[tp3[1]], m[tp3[2]]]).parameters
                     if alpha == 90 or b >= c:
