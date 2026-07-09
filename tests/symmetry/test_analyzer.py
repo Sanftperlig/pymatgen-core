@@ -463,6 +463,27 @@ class TestSpacegroupAnalyzer(MatSciTest):
         assert spg_analyzer.get_crystal_system() == "tetragonal"
         assert spg_analyzer.get_hall() == "-I 4 2"
 
+    def test_hexagonal_almost_rhombohedral(self):
+        """Test that #4679 is fixed (hexagonal lattice with a close to c is not rhombohedral)."""
+        structure = Structure(
+            lattice=[
+                [4.0570938, 0.0, 0.0],
+                [0.0, 4.0572993, 0.0],
+                [0.0, -2.02864965, 3.51372426],
+            ],
+            species=["Gd", "Se", "F"],
+            coords=[
+                [0.67496701, 2.02864967, 1.17124141],
+                [2.70478423, -2.02864966e-8, 2.34248285],
+                [0.67734256, 0.0, 0.0],
+            ],
+            coords_are_cartesian=True,
+        )
+
+        sga = SpacegroupAnalyzer(structure, symprec=0.01)
+        # 3 atoms expected in primitive rhombohedral cell (not 9)
+        assert len(sga.get_primitive_standard_structure()) == 3
+
     def test_bad_structure(self):
         struct = Structure(Lattice.cubic(5), ["H", "H"], [[0.0, 0.0, 0.0], [0.001, 0.0, 0.0]])
 
