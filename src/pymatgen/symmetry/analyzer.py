@@ -585,7 +585,7 @@ class SpacegroupAnalyzer:
         )
         lattype = self.get_lattice_type()
 
-        if "P" in self.get_space_group_symbol() or lattype == "hexagonal":
+        if self.get_space_group_symbol().startswith("P") or lattype == "hexagonal":
             return conv
 
         transf = self.get_conventional_to_primitive_transformation_matrix(
@@ -625,7 +625,7 @@ class SpacegroupAnalyzer:
             lattice = Lattice(new_matrix)
             for site in prim:
                 new_s = PeriodicSite(
-                    site.specie,
+                    site.species,
                     site.frac_coords,
                     lattice,
                     to_unit_cell=True,
