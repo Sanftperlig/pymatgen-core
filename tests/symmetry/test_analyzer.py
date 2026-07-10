@@ -491,6 +491,17 @@ class TestSpacegroupAnalyzer(MatSciTest):
         # (but do not force a specific site ordering)
         assert primitive.sites[0].species in species
 
+        # Additionally, check that rhombohedral cells also use .species in primitivization
+        # Initialize a rhombohedral cell with a hexagonal lattice
+        spec = Composition({"H": 0.5})
+        hex_rhomb = Structure.from_spacegroup(166, Lattice.hexagonal(5, 7), [spec], coords=np.zeros((1, 3)))
+        assert len(hex_rhomb) == 3
+        # Primitive (rhombohedral) form should be 1/3, same spacegroup
+        primitive = SpacegroupAnalyzer(hex_rhomb).get_primitive_standard_structure()
+        assert len(primitive) == 1
+        assert SpacegroupAnalyzer(primitive).get_space_group_number() == 166
+        assert primitive.sites[0].species == spec
+
     def test_bad_structure(self):
         struct = Structure(Lattice.cubic(5), ["H", "H"], [[0.0, 0.0, 0.0], [0.001, 0.0, 0.0]])
 
