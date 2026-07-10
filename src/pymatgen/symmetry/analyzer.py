@@ -531,30 +531,30 @@ class SpacegroupAnalyzer:
         if conv_lattice is None:
             conv = self.get_conventional_standard_structure(international_monoclinic=international_monoclinic)
             conv_lattice = conv.lattice
-        lattype = self.get_lattice_type()
 
-        if self.get_space_group_symbol().startswith("P"):
+        space_group = self.get_space_group_symbol()
+
+        if space_group.startswith("P"):
             return np.eye(3, dtype=np.float64)
 
-        if lattype == "rhombohedral":
-            # Check if the conventional representation is hexagonal or
-            # rhombohedral
-            if abs(conv_lattice.lengths[0] - conv_lattice.lengths[2]) < 1e-4:
-                return np.eye(3)
+        if space_group.startswith("R"):
             return np.array([[-1, 1, 1], [2, 1, 1], [-1, -2, 1]], dtype=np.float64) / 3
 
-        if self.get_space_group_symbol().startswith("I"):
+        if space_group.startswith("I"):
             return np.array([[-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=np.float64) / 2
 
-        if self.get_space_group_symbol().startswith("F"):
+        if space_group.startswith("F"):
             return np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=np.float64) / 2
 
-        if self.get_space_group_symbol().startswith(("C", "A")):
+        if space_group.startswith("C"):
             if self.get_crystal_system() == "monoclinic":
                 return np.array([[1, 1, 0], [-1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
             return np.array([[1, -1, 0], [1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
 
-        return np.eye(3, dtype=np.float64)
+        if space_group.startswith("A"):
+            return np.array([[2, 0, 0], [0, 1, 1], [0, -1, 1]], dtype=np.float64) / 2
+
+        raise ValueError(f"Unrecognized space group {space_group}.")
 
     @cite_conventional_cell_algo
     def get_primitive_standard_structure(

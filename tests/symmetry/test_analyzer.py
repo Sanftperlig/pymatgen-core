@@ -502,6 +502,19 @@ class TestSpacegroupAnalyzer(MatSciTest):
         assert SpacegroupAnalyzer(primitive).get_space_group_number() == 166
         assert primitive.sites[0].species == spec
 
+    def test_primitivization_of_a_centered_cell(self):
+        """Test that an A-centered cell modifies alpha when primitivized."""
+        ortho_lattice = Lattice.orthorhombic(10, 11, 12)
+        species = ["Si", "Ge"]
+        # General sites
+        coords = [[0.137, 0.251, 0.389], [0.947, 0.370, 0.050]]
+        struct = Structure.from_spacegroup("Amm2", ortho_lattice, species, coords)
+        sga = SpacegroupAnalyzer(struct)
+
+        assert sga.get_space_group_number() == 38
+        # alpha is not 90° anymore
+        assert sga.get_primitive_standard_structure().lattice.alpha != 90
+
     def test_bad_structure(self):
         struct = Structure(Lattice.cubic(5), ["H", "H"], [[0.0, 0.0, 0.0], [0.001, 0.0, 0.0]])
 
