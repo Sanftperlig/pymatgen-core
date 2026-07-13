@@ -757,6 +757,7 @@ class SpacegroupAnalyzer:
                 [a / 2, a * math.sqrt(3) / 2, 0],
                 [0, 0, c],
             ]
+            lattice = Lattice(new_matrix)
             transf = np.eye(3, dtype=np.float64)  # type:ignore[assignment]
 
         elif latt_type == "monoclinic":
@@ -785,7 +786,7 @@ class SpacegroupAnalyzer:
                     lengths = latt2.lengths
                     angles = latt2.angles
                     alpha_degrees = angles[0]
-                    if alpha_degrees == 90:
+                    if math.isclose(alpha_degrees, 90, rel_tol=0, abs_tol=1e-10):
                         continue
 
                     transf = np.zeros(shape=(3, 3))
@@ -826,7 +827,7 @@ class SpacegroupAnalyzer:
                 for tp3 in itertools.permutations(range(3), 3):
                     m = lattice.matrix
                     a, b, c, alpha, beta, gamma = Lattice([m[tp3[0]], m[tp3[1]], m[tp3[2]]]).parameters
-                    if alpha == 90 or b >= c:
+                    if math.isclose(alpha, 90, rel_tol=0, abs_tol=1e-10) or b >= c:
                         continue
                     transf = np.zeros(shape=(3, 3))
                     transf[2][tp3[2]] = 1
