@@ -491,7 +491,6 @@ class TestSpacegroupAnalyzer(MatSciTest):
         # (but do not force a specific site ordering)
         assert primitive.sites[0].species in species
 
-        # Additionally, check that rhombohedral cells also use .species in primitivization
         # Initialize a rhombohedral cell with a hexagonal lattice
         spec = Composition({"H": 0.5})
         hex_rhomb = Structure.from_spacegroup(166, Lattice.hexagonal(5, 7), [spec], coords=np.zeros((1, 3)))
@@ -499,8 +498,14 @@ class TestSpacegroupAnalyzer(MatSciTest):
         # Primitive (rhombohedral) form should be 1/3, same spacegroup
         primitive = SpacegroupAnalyzer(hex_rhomb).get_primitive_standard_structure()
         assert len(primitive) == 1
-        assert SpacegroupAnalyzer(primitive).get_space_group_number() == 166
+        prim_sga = SpacegroupAnalyzer(primitive)
+        # Symmetry unchanged
+        assert prim_sga.get_space_group_number() == 166
+        # Check that rhombohedral cells also use .species in primitivization
         assert primitive.sites[0].species == spec
+        # Re-standardizaion leads back to 3 sites
+        re_standard = prim_sga.get_conventional_standard_structure()
+        assert len(re_standard) == 3
 
     def test_primitivization_of_a_centered_cell(self):
         """Test that an A-centered cell modifies gamma when primitivized."""
@@ -516,7 +521,12 @@ class TestSpacegroupAnalyzer(MatSciTest):
         # (Note that this happens because the A-centering is changed to C-centering
         # during standardization [without changing the saved space group!]. For normal
         # A-centering it would be alpha != 90.)
-        assert sga.get_primitive_standard_structure().lattice.gamma != 90
+        lattice = sga.get_primitive_standard_structure().lattice
+        assert lattice.gamma != 90
+        # Due to the same standardization, the previous a parameter is unchanged in c
+        assert math.isclose(lattice.c, 10)
+        # and a/b are approximately equal
+        assert math.isclose(lattice.a, lattice.b)
 
     def test_bad_structure(self):
         struct = Structure(Lattice.cubic(5), ["H", "H"], [[0.0, 0.0, 0.0], [0.001, 0.0, 0.0]])
