@@ -511,7 +511,7 @@ class SpacegroupAnalyzer:
     @cite_conventional_cell_algo
     def get_conventional_to_primitive_transformation_matrix(
         self,
-        international_monoclinic: bool,
+        international_monoclinic: bool = True,
     ) -> NDArray:
         """Get the transformation matrix to transform a conventional unit cell to a
         primitive cell according to certain standards. The standards are defined in
