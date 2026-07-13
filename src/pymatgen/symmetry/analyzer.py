@@ -511,8 +511,7 @@ class SpacegroupAnalyzer:
     @cite_conventional_cell_algo
     def get_conventional_to_primitive_transformation_matrix(
         self,
-        international_monoclinic: bool = True,
-        conv_lattice: Lattice | None = None,
+        international_monoclinic: bool,
     ) -> NDArray:
         """Get the transformation matrix to transform a conventional unit cell to a
         primitive cell according to certain standards. The standards are defined in
@@ -522,16 +521,15 @@ class SpacegroupAnalyzer:
 
         Args:
             international_monoclinic (bool): Whether to convert to proper international convention
-                such that beta is the non-right angle.
-            conv_lattice (Lattice): Conventional Lattice of the structure, if known.
+                such that beta is the non-right angle. Unused.
 
         Returns:
-            Transformation matrix to go from conventional to primitive cell
-        """
-        if conv_lattice is None:
-            conv = self.get_conventional_standard_structure(international_monoclinic=international_monoclinic)
-            conv_lattice = conv.lattice
+            Transformation matrix to go from conventional to primitive cell.
 
+        Notes:
+            Note that for face-centered space groups (C-/A-centered), standardization to C-centering
+            is expected. Therefore, the transformation matrix C->P is returned.
+        """
         space_group = self.get_space_group_symbol()
 
         if space_group.startswith("P"):
@@ -546,13 +544,12 @@ class SpacegroupAnalyzer:
         if space_group.startswith("F"):
             return np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=np.float64) / 2
 
-        if space_group.startswith("C"):
+        # Convert face-centered cell. Note that this converts a C-centered cell,
+        # A-centered cells must be standardized to them beforehand.
+        if space_group.startswith(("C", "A")):
             if self.get_crystal_system() == "monoclinic":
                 return np.array([[1, 1, 0], [-1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
             return np.array([[1, -1, 0], [1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
-
-        if space_group.startswith("A"):
-            return np.array([[2, 0, 0], [0, 1, 1], [0, -1, 1]], dtype=np.float64) / 2
 
         raise ValueError(f"Unrecognized space group {space_group}.")
 
@@ -592,11 +589,11 @@ class SpacegroupAnalyzer:
             return conv
 
         transf = self.get_conventional_to_primitive_transformation_matrix(
-            international_monoclinic=international_monoclinic, conv_lattice=conv.lattice
+            international_monoclinic=international_monoclinic
         )
 
         new_sites: list[PeriodicSite] = []
-        lattice = Lattice(np.dot(transf, conv.lattice.matrix))
+        lattice = Lattice(transf @ conv.lattice.matrix)
         for site in conv:
             new_s = PeriodicSite(
                 site.species,
@@ -610,11 +607,8 @@ class SpacegroupAnalyzer:
                 new_sites.append(new_s)
 
         if lattype == "rhombohedral":
-            prim = Structure.from_sites(new_sites)
-            lengths = prim.lattice.lengths
-            angles = prim.lattice.angles
-            a = lengths[0]
-            alpha = math.radians(angles[0])
+            a = lattice.a
+            alpha = math.radians(lattice.alpha)
             new_matrix = [
                 [a * cos(alpha / 2), -a * sin(alpha / 2), 0],
                 [a * cos(alpha / 2), a * sin(alpha / 2), 0],
@@ -624,18 +618,20 @@ class SpacegroupAnalyzer:
                     a * math.sqrt(1 - (cos(alpha) ** 2 / (cos(alpha / 2) ** 2))),
                 ],
             ]
-            new_sites = []
+            rhomb_sites: list[PeriodicSite] = []
             lattice = Lattice(new_matrix)
-            for site in prim:
+            for site in new_sites:
                 new_s = PeriodicSite(
                     site.species,
-                    site.frac_coords,
+                    site.coords,
                     lattice,
                     to_unit_cell=True,
+                    coords_are_cartesian=True,
                     properties=site.properties,
                 )
                 if not any(map(new_s.is_periodic_image, new_sites)):
                     new_sites.append(new_s)
+            new_sites = rhomb_sites
 
         return Structure.from_sites(new_sites)
 

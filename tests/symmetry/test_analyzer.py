@@ -503,7 +503,7 @@ class TestSpacegroupAnalyzer(MatSciTest):
         assert primitive.sites[0].species == spec
 
     def test_primitivization_of_a_centered_cell(self):
-        """Test that an A-centered cell modifies alpha when primitivized."""
+        """Test that an A-centered cell modifies gamma when primitivized."""
         ortho_lattice = Lattice.orthorhombic(10, 11, 12)
         species = ["Si", "Ge"]
         # General sites
@@ -512,8 +512,11 @@ class TestSpacegroupAnalyzer(MatSciTest):
         sga = SpacegroupAnalyzer(struct)
 
         assert sga.get_space_group_number() == 38
-        # alpha is not 90° anymore
-        assert sga.get_primitive_standard_structure().lattice.alpha != 90
+        # *gamma* is not 90° anymore
+        # (Note that this happens because the A-centering is changed to C-centering
+        # during standardization [without changing the saved space group!]. For normal
+        # A-centering it would be alpha != 90.)
+        assert sga.get_primitive_standard_structure().lattice.gamma != 90
 
     def test_bad_structure(self):
         struct = Structure(Lattice.cubic(5), ["H", "H"], [[0.0, 0.0, 0.0], [0.001, 0.0, 0.0]])
