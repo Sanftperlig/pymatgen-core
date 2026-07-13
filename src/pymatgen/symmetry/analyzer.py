@@ -591,30 +591,23 @@ class SpacegroupAnalyzer:
             international_monoclinic=international_monoclinic
         )
 
-        prim_lattice = Lattice(transf @ conv.lattice.matrix)
-
-        # Create primitive sites
-        prim_sites: list[PeriodicSite] = []
-        seen: set[tuple[float, float, float]] = set()
-
+        new_sites: list[PeriodicSite] = []
+        lattice = Lattice(transf @ conv.lattice.matrix)
         for site in conv:
-            s = PeriodicSite(
+            new_s = PeriodicSite(
                 site.species,
                 site.coords,
-                prim_lattice,
+                lattice,
                 to_unit_cell=True,
                 coords_are_cartesian=True,
                 properties=site.properties,
             )
-            key = tuple(np.round(np.mod(s.frac_coords, 1.0), 8))
-            if key not in seen:
-                seen.add(key)
-                prim_sites.append(s)
+            if not any(map(new_s.is_periodic_image, new_sites)):
+                new_sites.append(new_s)
 
-        # Standardize rhombohedral cell
         if self.get_lattice_type() == "rhombohedral":
-            a = prim_lattice.a
-            alpha = math.radians(prim_lattice.alpha)
+            a = lattice.a
+            alpha = math.radians(lattice.alpha)
             new_matrix = [
                 [a * cos(alpha / 2), -a * sin(alpha / 2), 0],
                 [a * cos(alpha / 2), a * sin(alpha / 2), 0],
@@ -624,20 +617,21 @@ class SpacegroupAnalyzer:
                     a * math.sqrt(1 - (cos(alpha) ** 2 / (cos(alpha / 2) ** 2))),
                 ],
             ]
-            rhom_lattice = Lattice(new_matrix)
-
-            prim_sites = [
-                PeriodicSite(
+            rhomb_sites = []
+            lattice = Lattice(new_matrix)
+            for site in new_sites:
+                new_s = PeriodicSite(
                     site.species,
                     site.frac_coords,
-                    rhom_lattice,
+                    lattice,
                     to_unit_cell=True,
                     properties=site.properties,
                 )
-                for site in prim_sites
-            ]
+                if not any(map(new_s.is_periodic_image, new_sites)):
+                    rhomb_sites.append(new_s)
+            new_sites = rhomb_sites
 
-        return Structure.from_sites(prim_sites)
+        return Structure.from_sites(new_sites)
 
     @cite_conventional_cell_algo
     def get_conventional_standard_structure(
