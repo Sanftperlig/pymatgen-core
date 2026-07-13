@@ -630,7 +630,7 @@ class SpacegroupAnalyzer:
                     properties=site.properties,
                 )
                 if not any(map(new_s.is_periodic_image, new_sites)):
-                    new_sites.append(new_s)
+                    rhomb_sites.append(new_s)
             new_sites = rhomb_sites
 
         return Structure.from_sites(new_sites)
