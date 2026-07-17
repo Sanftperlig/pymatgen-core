@@ -215,7 +215,7 @@ class Lattice(MSONable):
         """Get the Cartesian coordinates given fractional coordinates.
 
         Args:
-            fractional_coords (3x1 array): Fractional coords.
+            fractional_coords (3x1 or Nx3 array): Fractional coords.
 
         Returns:
             Cartesian coordinates
@@ -226,7 +226,7 @@ class Lattice(MSONable):
         """Get the fractional coordinates given Cartesian coordinates.
 
         Args:
-            cart_coords (3x1 array): Cartesian coords.
+            cart_coords (3x1 or Nx3 array): Cartesian coords.
 
         Returns:
             Fractional coordinates.
@@ -248,7 +248,7 @@ class Lattice(MSONable):
         class in `pymatgen.analysis.ferroelectricity.polarization`.
 
         Args:
-            cart_coords (3x1 array): Cartesian coords.
+            cart_coords (3x1 or Nx3 array): Cartesian coords.
 
         Returns:
             Lattice coordinates.

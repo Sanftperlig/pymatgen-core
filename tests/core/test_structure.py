@@ -1041,6 +1041,13 @@ Direct
         assert empty.cart_coords.shape == (0, 3)
         assert empty.frac_coords.shape == (0, 3)
 
+    def test_broken_coordinates(self):
+        """Test that broken coordinates cause an explicit error."""
+        # Second coordinate is only 2D
+        coords = [[0, 0, 0], [0.5, 0.5], [1, 1, 1]]
+        with pytest.raises(ValueError, match="Coordinates"):
+            IStructure(Lattice.cubic(1), ["H", "H", "H"], coords)
+
 
 class TestStructure(MatSciTest):
     def setup_method(self):

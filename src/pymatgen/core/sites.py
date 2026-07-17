@@ -416,7 +416,7 @@ class PeriodicSite(Site, MSONable):
 
     @lattice.setter
     def lattice(self, lattice: Lattice) -> None:
-        """Set Lattice associated with PeriodicSite."""
+        """Set Lattice associated with PeriodicSite. The old fractional coordinates remain."""
         self._lattice = lattice
         self._coords = self._lattice.get_cartesian_coords(self._frac_coords)
 
@@ -431,6 +431,8 @@ class PeriodicSite(Site, MSONable):
     def coords(self, coords: ArrayLike) -> None:
         """Set Cartesian coordinates."""
         self._coords = np.asarray(coords, dtype=np.float64)
+        if self._coords.shape != (3,):
+            raise ValueError(f"Cartesian coordinates {self._coords} are invalid - expected shape is (3,).")
         self._frac_coords = self._lattice.get_fractional_coords(self._coords)
 
     @property
@@ -442,6 +444,8 @@ class PeriodicSite(Site, MSONable):
     def frac_coords(self, frac_coords: ArrayLike) -> None:
         """Set fractional coordinates."""
         self._frac_coords = np.array(frac_coords, dtype=np.float64)
+        if self._frac_coords.shape != (3,):
+            raise ValueError(f"Fractional coordinates {self._frac_coords} are invalid - expected shape is (3,).")
         self._coords = self._lattice.get_cartesian_coords(self._frac_coords)
 
     @property
