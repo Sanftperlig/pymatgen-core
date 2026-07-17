@@ -1619,8 +1619,10 @@ class Lattice(MSONable):
             2d array of Cartesian distances. E.g the distance between
             frac_coords1[i] and frac_coords2[j] is distances[i,j]
         """
-        _v, d2 = pbc_shortest_vectors(self, frac_coords1, frac_coords2, return_d2=True)
-        return np.sqrt(d2)
+        if len(frac_coords1) and len(frac_coords2):
+            _v, d2 = pbc_shortest_vectors(self, frac_coords1, frac_coords2, return_d2=True)
+            return np.sqrt(d2)
+        return np.empty((len(frac_coords1), len(frac_coords2)), dtype=np.float64)
 
     def is_hexagonal(
         self,
