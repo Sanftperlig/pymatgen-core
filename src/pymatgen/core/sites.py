@@ -357,8 +357,13 @@ class PeriodicSite(Site, MSONable):
         if to_unit_cell:
             frac_coords = np.array([np.mod(f, 1) if p else f for p, f in zip(lattice.pbc, frac_coords, strict=True)])  # type: ignore[arg-type]
 
+        frac_coords = np.asarray(frac_coords, dtype=np.float64)
+
         if not skip_checks:
-            frac_coords = np.array(frac_coords)
+            if frac_coords.shape != (3,):
+                raise ValueError(
+                    f"Coordinates {frac_coords} for species {species} are not xyz-shaped (shape {frac_coords.shape})."
+                )
             if not isinstance(species, Composition):
                 try:
                     species = Composition({get_el_sp(species): 1})  # type: ignore[arg-type]
@@ -370,7 +375,7 @@ class PeriodicSite(Site, MSONable):
                 raise ValueError("Species occupancies sum to more than 1!")
 
         self._lattice: Lattice = lattice
-        self._frac_coords: NDArray[np.float64] = np.asarray(frac_coords, dtype=np.float64)
+        self._frac_coords: NDArray[np.float64] = frac_coords
         self._species: Composition = cast("Composition", species)
         self._coords: NDArray[np.float64] | None = None
         self.properties: dict = properties or {}

@@ -1080,7 +1080,7 @@ class IStructure(SiteCollection, MSONable):
 
         self._lattice = lattice if isinstance(lattice, Lattice) else Lattice(lattice)
 
-        sites = []
+        sites: list[PeriodicSite] = []
         for idx, specie in enumerate(species):
             prop = None
             if site_properties:
