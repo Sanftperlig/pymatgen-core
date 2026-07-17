@@ -957,7 +957,7 @@ class Lattice(MSONable):
             x = np.inner(v1, v2) / l1[:, None] / l2
             x[x > 1] = 1
             x[x < -1] = -1
-            return math.degrees(np.arccos(x))
+            return np.rad2deg(np.arccos(x))
 
         lengths = other_lattice.lengths
         alpha, beta, gamma = other_lattice.angles
