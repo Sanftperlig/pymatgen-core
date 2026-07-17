@@ -355,7 +355,9 @@ class PeriodicSite(Site, MSONable):
         frac_coords = lattice.get_fractional_coords(coords) if coords_are_cartesian else coords
 
         if to_unit_cell:
-            frac_coords = np.array([np.mod(f, 1) if p else f for p, f in zip(lattice.pbc, frac_coords, strict=True)])  # type: ignore[arg-type]
+            frac_coords = np.array(
+                [np.mod(f, 1) if p else f for p, f in zip(lattice.pbc, frac_coords, strict=True)], dtype=np.float64
+            )
 
         frac_coords = np.asarray(frac_coords, dtype=np.float64)
 
