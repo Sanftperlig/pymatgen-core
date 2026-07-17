@@ -1035,6 +1035,12 @@ Direct
         with pytest.raises(ValueError, match="Invalid backend='42'"):
             self.struct.get_symmetry_dataset(backend="42")
 
+    def test_siteless_structure(self):
+        """Test that a Structure without sites returns 2D coordinates."""
+        empty = IStructure(Lattice.cubic(1), [], np.empty((0, 3), dtype=np.float64))
+        assert empty.cart_coords.shape == (0, 3)
+        assert empty.frac_coords.shape == (0, 3)
+
 
 class TestStructure(MatSciTest):
     def setup_method(self):
@@ -2254,12 +2260,6 @@ Sites (8)
         struct_deuter.to(f"{self.tmp_path}/POSCAR_deuter")
         struct = Structure.from_file(f"{self.tmp_path}/POSCAR_deuter")
         assert "Deuterium" not in [el.long_name for el in struct.composition.elements]
-
-    def test_siteless_structure(self):
-        """Test that a Structure without sites returns 2D coordinates."""
-        empty = Structure(Lattice.cubic(1), [], np.empty((0, 3), dtype=np.float64))
-        assert empty.cart_coords.shape == (0, 3)
-        assert empty.frac_coords.shape == (0, 3)
 
 
 class TestIMolecule(MatSciTest):
