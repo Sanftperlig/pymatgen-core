@@ -1115,6 +1115,12 @@ class TestStructure(MatSciTest):
         coords = np.array([[0.1, 0.5, 0.9], [0.5, 1.0, 1.5], [1.9, 1.3, 0.8]], dtype=np.float64)
         struct.cart_coords = coords
         assert np.allclose(struct.cart_coords, coords)
+
+        # Addition of a vector should add this vector to all coordinates (same as numpy array)
+        vector = np.array([0, 0.5, 0], dtype=np.float64)
+        struct.cart_coords += vector
+        assert np.allclose(struct.cart_coords, coords + vector)
+
         f_coords = np.array([[0.1, 0.1, 0.1], [0.6, 0.6, 0.6], [0.9, 0.9, 0.9]], dtype=np.float64)
         struct.frac_coords = f_coords
         assert np.allclose(struct.frac_coords, f_coords)
