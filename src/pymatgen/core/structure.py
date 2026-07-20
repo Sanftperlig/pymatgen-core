@@ -4031,12 +4031,22 @@ class Structure(IStructure, collections.abc.MutableSequence):
     @IStructure.frac_coords.setter
     def frac_coords(self, fractional_coords: ArrayLike) -> None:
         """Sets the fractional coordinates of the Sites in the Structure."""
+        if len(fractional_coords) != len(self.sites):
+            raise ValueError(
+                "A Structure must have as many coordinates as it has sites, "
+                f"{len(fractional_coords)=} != {len(self.sites)=}."
+            )
         for i, site in enumerate(self.sites):
             site.frac_coords = np.asarray(fractional_coords[i], dtype=np.float64)
 
     @IStructure.cart_coords.setter
     def cart_coords(self, cartesian_coords: ArrayLike) -> None:
         """Sets the cartesian coordinates of the Sites in the Structure."""
+        if len(cartesian_coords) != len(self.sites):
+            raise ValueError(
+                "A Structure must have as many coordinates as it has sites, "
+                f"{len(cartesian_coords)=} != {len(self.sites)=}."
+            )
         for i, site in enumerate(self.sites):
             site.coords = np.asarray(cartesian_coords[i], dtype=np.float64)
 
