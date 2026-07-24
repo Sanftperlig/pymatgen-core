@@ -809,7 +809,7 @@ class TestMillerIndexFinder(MatSciTest):
         assert len(indices) == 12
 
         # Now try a trigonal system.
-        indices = get_symmetrically_distinct_miller_indices(self.trig_bi, 2, return_hkil=True)
+        indices = get_symmetrically_distinct_miller_indices(self.trig_bi, 2, return_hkil=True, cell="conventional")
         assert len(indices) == 17
         assert all(len(hkl) == 4 for hkl in indices)
 

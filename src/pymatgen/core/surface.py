@@ -2132,7 +2132,7 @@ def get_symmetrically_distinct_miller_indices(
         # Also exclude the negative equivalents, as (hkl) and (-h, -k, -l)
         # are the same set of planes. We keep the one where the first
         # nonzero index is positive.
-        if math.gcd(*hkl) != 1 or next(i for i in hkl if i != 0) > 0:
+        if math.gcd(*hkl) != 1 or next(i for i in hkl if i != 0) < 0:
             continue
         if not _is_in_miller_family(hkl, unique_hkl, rec_symm_ops):
             unique_hkl.append(hkl)
