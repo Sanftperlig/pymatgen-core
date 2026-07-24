@@ -793,6 +793,14 @@ class TestMillerIndexFinder(MatSciTest):
         indices = get_symmetrically_distinct_miller_indices(self.cscl, 2)
         assert len(indices) == 6
 
+        # For a P... space group, all modes returning conventional indices should
+        # return the same indices (as long as the input cell is standard)
+        p_conv = get_symmetrically_distinct_miller_indices(self.cscl, 2, cell="conventional")
+        p_conv_np = get_symmetrically_distinct_miller_indices(self.cscl, 2, cell="conv_np")
+        p_prim = get_symmetrically_distinct_miller_indices(self.cscl, 2, cell="primitive")
+        p_prim2conv = get_symmetrically_distinct_miller_indices(self.cscl, 2, cell="prim_2conv")
+        assert p_conv == p_conv_np == p_prim == p_prim2conv
+
         assert len(get_symmetrically_distinct_miller_indices(self.lifepo4, 1)) == 7
 
         # The TeI P-1 structure should have 13 unique millers (only inversion
@@ -809,6 +817,8 @@ class TestMillerIndexFinder(MatSciTest):
         assert len(indices) == 12
 
         # Now try a trigonal system.
+        # Note that a trigonal cell must use cell="conventional" to restore the old behaviour
+        # of using the primitive symmetry.
         indices = get_symmetrically_distinct_miller_indices(self.trig_bi, 2, return_hkil=True, cell="conventional")
         assert len(indices) == 17
         assert all(len(hkl) == 4 for hkl in indices)
@@ -818,6 +828,18 @@ class TestMillerIndexFinder(MatSciTest):
             assert set(get_symmetrically_distinct_miller_indices(self.trig_bi, idx)) <= set(
                 get_symmetrically_distinct_miller_indices(self.trig_bi, idx + 1)
             )
+
+        # Using the conventional symmetry ops will lead to less distinct indices (as there is centering):
+        # (the input cell is conventional, so input==conv_np)
+        indices_i = get_symmetrically_distinct_miller_indices(self.trig_bi, 2, return_hkil=True, cell="input")
+        assert len(indices_i) == 12
+        indices_np = get_symmetrically_distinct_miller_indices(self.trig_bi, 2, return_hkil=True, cell="conv_np")
+        assert indices_i == indices_np
+
+        # With primitive symmetry, the count *can* be different (depends on the lattice)
+        indices_p = get_symmetrically_distinct_miller_indices(self.trig_bi, 2, return_hkil=True, cell="primitive")
+        assert len(indices_p) == 13
+        # Count has to be the same with converted indices, but the indices are different
 
     def test_get_symmetrically_equivalent_miller_indices(self):
         # Tests to see if the function obtains all equivalent hkl for cubic (100)
