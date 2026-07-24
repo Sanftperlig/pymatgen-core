@@ -2120,12 +2120,19 @@ def get_symmetrically_distinct_miller_indices(
             with indices to the same maximum absolute index being sorted by ascending absolute sum over hkl.
     """
 
-    def hkl_sort(hkl: tuple[int, int, int]):
-        """Returns a deterministic sorting key for hkl lists."""
-        h = abs(hkl[0])
-        k = abs(hkl[1])
-        L = abs(hkl[2])
-        return (max(h, k, L), h + k + L, hkl)
+    def hkl_key(hkl: tuple[int, int, int]) -> tuple[int, int, int, int, int]:
+        """Returns a deterministic sorting key for hkl tuples.
+
+        This key was chosen to prefer smaller absolute maximum values and
+        First: Lower maximum absolute index (e. g. (100) over (200)).
+        Second: Lower sum of absolute values (e. g. (100) over (110)).
+        Then: Highest value in h, then k, then l (e. g. (100) over (-100)/(010)).
+        """
+        h, k, L = hkl
+        ah = abs(h)
+        ak = abs(k)
+        al = abs(L)
+        return (max(ah, ak, al), ah + ak + al, -h, -k, -L)
 
     sga = SpacegroupAnalyzer(structure)
     # Transform the cell as requested
@@ -2186,10 +2193,10 @@ def get_symmetrically_distinct_miller_indices(
     # Sort by the maximum absolute values of Miller indices so that low-index planes come first.
     # Inside a maximum index, sort by lowest absolute sum so simpler planes come first.
     # This is also relevant to get the smallest-index representation (see pymatgen#2944/2949)
-    # By adding hkl itself as a third key, candidate_hkl has an explicit order
-    candidate_hkl.sort(key=hkl_sort)
+    # By adding -hkl itself as a third key, candidate_hkl has an explicit order
+    candidate_hkl.sort(key=hkl_key)
 
-    # Collect all unique hkl
+    # Collect all unique hkl (stays sorted like candidate_hkl is)
     unique_hkl: list[tuple[int, int, int]] = []
     for hkl in candidate_hkl:
         # Non-reduced hkl indices are equal to their smaller form,
@@ -2209,7 +2216,7 @@ def get_symmetrically_distinct_miller_indices(
         p2c_matrix = np.linalg.inv(sga.get_conventional_to_primitive_transformation_matrix())
         unique_hkl = [hkl_transformation(p2c_matrix, hkl) for hkl in unique_hkl]
         # Re-sort, as indices changed
-        unique_hkl.sort(key=hkl_sort)
+        unique_hkl.sort(key=hkl_key)
 
     if return_hkil:
         # hkil only make sense for the hexagonal family
