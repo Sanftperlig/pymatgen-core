@@ -21,7 +21,7 @@ import math
 import os
 import warnings
 from functools import reduce
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast, overload
 
 import numpy as np
 import orjson
@@ -35,12 +35,13 @@ from pymatgen.util.coord import in_coord_list
 from pymatgen.util.due import Doi, due
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
     from typing import Any, Self
 
     from numpy.typing import ArrayLike, NDArray
 
     from pymatgen.core.composition import Element, Species
+    from pymatgen.core.operations import SymmOp
     from pymatgen.core.structure import IStructure
     from pymatgen.symmetry.groups import CrystalSystem
 
@@ -2052,11 +2053,33 @@ def get_symmetrically_equivalent_miller_indices(
     return equivalent_millers
 
 
+@overload
+def get_symmetrically_distinct_miller_indices(
+    structure: Structure | IStructure,
+    max_index: int,
+    return_hkil: Literal[False] = False,
+    cell: Literal["input", "conventional", "primitive"] = "primitive",
+    primitive_to_conventional: bool = True,
+) -> list[tuple[int, int, int]]: ...
+
+
+@overload
+def get_symmetrically_distinct_miller_indices(
+    structure: Structure | IStructure,
+    max_index: int,
+    return_hkil: Literal[True] = True,
+    cell: Literal["input", "conventional", "primitive"] = "primitive",
+    primitive_to_conventional: bool = True,
+) -> list[tuple[int, int, int, int]]: ...
+
+
 def get_symmetrically_distinct_miller_indices(
     structure: Structure | IStructure,
     max_index: int,
     return_hkil: bool = False,
-) -> list:
+    cell: Literal["input", "conventional", "primitive"] = "input",
+    primitive_to_conventional: bool = True,
+) -> list[tuple[int, int, int]] | list[tuple[int, int, int, int]]:
     """Find all symmetrically distinct indices below a certain max-index
     for a given structure. Analysis is based on the symmetry of the
     reciprocal lattice of the structure.
@@ -2068,64 +2091,84 @@ def get_symmetrically_distinct_miller_indices(
             All other indices are equivalent to one of these.
         return_hkil (bool): Whether to return hkil (True) form of Miller
             index for hexagonal systems, or hkl (False).
+        cell (Literal["input", "conventional", "primitive"] = "input"): Cell type to base the Miller indices on.
+            With "input" the input structure is used, while with "conventional" or "primitive" a SpacegroupAnalyzer
+            is used to first obtain the conventional standard or primitive standard representation of the structure.
+            The returned miller indices are therefore relative to this cell, with the exception of using
+            `primitive_to_conventional`.
+        primitive_to_conventional (bool = True): Transform the primitive indices back to conventional indices
+            when using `cell == "primitive"`.
     """
-    # Get a list of all hkls for conventional (including equivalent)
-    rng = list(range(-max_index, max_index + 1))[::-1]
-    conv_hkl_list = [miller for miller in itertools.product(rng, rng, rng) if any(i != 0 for i in miller)]
+    # Get a list of all hkls up to the defined maximum
+    # Exclude (0, 0, 0) and linearly dependent multiples
+    indices = range(-max_index, max_index + 1)
+    candidate_hkl = cast("list[tuple[int, int, int]]", list(itertools.product(indices, repeat=3)))
+    # (0, 0, 0) is always present, remove it
+    candidate_hkl.remove((0, 0, 0))
 
     # Sort by the maximum absolute values of Miller indices so that
     # low-index planes come first. This is important for trigonal systems.
-    conv_hkl_list = sorted(conv_hkl_list, key=lambda x: max(np.abs(x)))
+    candidate_hkl = sorted(candidate_hkl, key=lambda x: max(np.abs(x)))
 
-    # Get distinct hkl planes from the rhombohedral setting if trigonal
-    spg_analyzer = SpacegroupAnalyzer(structure)
-    if spg_analyzer.get_crystal_system() == "trigonal":
-        transf = spg_analyzer.get_conventional_to_primitive_transformation_matrix()
-        miller_list: list[tuple[int, int, int]] = [hkl_transformation(transf, hkl) for hkl in conv_hkl_list]
-        prim_structure = SpacegroupAnalyzer(structure).get_primitive_standard_structure()
-        symm_ops = prim_structure.lattice.get_recp_symmetry_operation()
-
+    sga = SpacegroupAnalyzer(structure)
+    # Transform the cell as requested
+    if cell == "input":
+        transformed = structure
+    elif cell == "conventional":
+        transformed = sga.get_conventional_standard_structure()
+    elif cell == "primitive":
+        transformed = sga.get_primitive_standard_structure()
     else:
-        miller_list = conv_hkl_list
-        symm_ops = structure.lattice.get_recp_symmetry_operation()
+        raise ValueError(f"Unsupported cell type {cell}.")
 
-    unique_millers: list = []
-    unique_millers_conv: list = []
+    # Uses the reciprocal lattice and a SGA to get rec. sym. ops
+    rec_symm_ops = transformed.lattice.get_recp_symmetry_operation()
 
-    for idx, miller in enumerate(miller_list):
-        denom = abs(reduce(math.gcd, miller))  # type: ignore[arg-type]
-        miller = cast("tuple[int, int, int]", tuple(int(idx / denom) for idx in miller))
-        if not _is_in_miller_family(miller, unique_millers, symm_ops):
-            if spg_analyzer.get_crystal_system() == "trigonal":
-                # Now we find the distinct primitive hkls using
-                # the primitive symmetry operations and their
-                # corresponding hkls in the conventional setting
-                unique_millers.append(miller)
-                denom = abs(reduce(math.gcd, conv_hkl_list[idx]))  # type: ignore[arg-type]
-                cmiller = tuple(int(idx / denom) for idx in conv_hkl_list[idx])
-                unique_millers_conv.append(cmiller)
-            else:
-                unique_millers.append(miller)
-                unique_millers_conv.append(miller)
+    # Collect all unique hkl
+    unique_hkl: list[tuple[int, int, int]] = []
+    for hkl in candidate_hkl:
+        # Non-reduced hkl indices are equal to their smaller form,
+        # therefore check that gcd is 1 (gcd is always positive)
+        # Also exclude the negative equivalents, as (hkl) and (-h, -k, -l)
+        # are the same set of planes. We keep the one where the first
+        # nonzero index is positive.
+        if math.gcd(*hkl) != 1 or next(i for i in hkl if i != 0) > 0:
+            continue
+        if not _is_in_miller_family(hkl, unique_hkl, rec_symm_ops):
+            unique_hkl.append(hkl)
 
-    if return_hkil and spg_analyzer.get_crystal_system() in {"trigonal", "hexagonal"}:
-        return [(hkl[0], hkl[1], -1 * hkl[0] - hkl[1], hkl[2]) for hkl in unique_millers_conv]
+    # Transform primitive indices back to conventional, if requested
+    # If the spacegroup is not centered, the matrix will not change the values
+    if primitive_to_conventional and cell == "primitive" and not sga.get_space_group_symbol().startswith("P"):
+        p2c_matrix = np.linalg.inv(sga.get_conventional_to_primitive_transformation_matrix())
+        unique_hkl = [hkl_transformation(p2c_matrix, hkl) for hkl in unique_hkl]
 
-    return unique_millers_conv
+    # hkil only make sense for the hexagonal family
+    if return_hkil:
+        # For "input" cells we trust the user to know if hkil make sense for them
+        cell_not_conv = cell == "primitive" and not primitive_to_conventional
+        if cell != "input" and (cell_not_conv or sga.get_crystal_family() != "hexagonal"):
+            warnings.warn(
+                "hkil miller indices for a conventional hexagonal cell were requested, but the cell is in "
+                f"the {sga.get_crystal_family()} family and {' not' if cell_not_conv else ''} conventional.",
+                stacklevel=2,
+            )
+        return [(h, k, -h - k, L) for (h, k, L) in unique_hkl]
+    return unique_hkl
 
 
 def _is_in_miller_family(
     miller_index: tuple[int, int, int],
     miller_list: Sequence[tuple[int, int, int]],
-    symm_ops: list,
+    symm_ops: Iterable[SymmOp],
 ) -> bool:
     """Helper function to check if the given Miller index belongs
     to the same family of any index in the provided list.
 
     Args:
         miller_index (tuple[int, int, int]): The Miller index to analyze.
-        miller_list (list): List of Miller indices.
-        symm_ops (list): Symmetry operations for a lattice,
+        miller_list (Sequence[tuple[int, int, int]]): Sequence of Miller indices.
+        symm_ops (Iterable[SymmOp]): Symmetry operations for a lattice,
             used to define the indices family.
     """
     return any(in_coord_list(miller_list, op.operate(miller_index)) for op in symm_ops)
