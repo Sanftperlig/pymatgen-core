@@ -1201,6 +1201,7 @@ class SlabGenerator:
             )
 
             # Ensure lattice a and b is consistent between the OUC and the slab
+            # Gamma remains unchecked, so the surface could diverge even with no allow_smaller_than_ouc
             if self.allow_smaller_than_ouc or (
                 np.isclose(prim_slab_l.a, prim_ouc.lattice.a) and np.isclose(prim_slab_l.b, prim_ouc.lattice.b)
             ):
