@@ -32,7 +32,6 @@ from typing import (
     cast,
     get_args,
     overload,
-    override,
 )
 
 import numpy as np
@@ -60,6 +59,11 @@ from pymatgen.core.units import Length, Mass
 # + symmetry.groups (~6-10 ms) on every `from pymatgen.core import Structure`.
 from pymatgen.util.coord import all_distances, get_angle, lattice_points_in_supercell
 from pymatgen.util.due import Doi, due
+
+try:
+    from typing import override  # Python 3.12+
+except ImportError:
+    from typing_extensions import override  # Python 3.11
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
