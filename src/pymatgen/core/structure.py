@@ -1790,7 +1790,7 @@ class IStructure(SiteCollection[PeriodicSite], MSONable):
             include_index=True,
             include_image=True,
             sites=sites,
-            numerical_tol=1e-8,
+            numerical_tol=numerical_tol,
         )
         center_indices: list[int] = []
         points_indices: list[int] = []
