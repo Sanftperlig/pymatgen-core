@@ -549,20 +549,25 @@ class SpacegroupAnalyzer:
         if space_group.startswith("P"):
             return np.eye(3, dtype=np.float64)
 
+        # Hexagonal to rhombohedral - for S/C orientation see get_primitive_standard_structure
         if space_group.startswith("R"):
             return np.array([[-1, 1, 1], [2, 1, 1], [-1, -2, 1]], dtype=np.float64) / 3
 
+        # Setyawan/Curtarolo A.3/A.5/A.8
         if space_group.startswith("I"):
             return np.array([[-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=np.float64) / 2
 
+        # S/C A.2/A.7
         if space_group.startswith("F"):
             return np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=np.float64) / 2
 
         # Convert face-centered cell. Note that this converts a C-centered cell,
         # A-centered cells must be standardized to them beforehand.
         if space_group.startswith(("C", "A")):
+            # S/C A.13
             if self.get_crystal_system() == "monoclinic":
                 return np.array([[1, 1, 0], [-1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
+            # S/C A.2/A.9
             return np.array([[1, -1, 0], [1, 1, 0], [0, 0, 2]], dtype=np.float64) / 2
 
         raise ValueError(f"Unrecognized space group {space_group}.")
@@ -622,7 +627,7 @@ class SpacegroupAnalyzer:
                 new_sites.append(new_s)
 
         # Reorient rhombohedral lattices (keep sites & frac. coordinates)
-        # (to match Setyawan/Curtarolo convention)
+        # (to match Setyawan/Curtarolo convention in A.11)
         if sg_symbol.startswith("R"):
             a = prim_lattice.a
             alpha = math.radians(prim_lattice.alpha)
