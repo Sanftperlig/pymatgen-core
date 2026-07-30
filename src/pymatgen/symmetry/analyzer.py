@@ -525,7 +525,7 @@ class SpacegroupAnalyzer:
     @cite_conventional_cell_algo
     def get_conventional_to_primitive_transformation_matrix(
         self,
-        international_monoclinic: bool = True,
+        international_monoclinic: bool | None = None,
     ) -> NDArray:
         """Get the transformation matrix to transform a conventional unit cell to a
         primitive cell according to certain standards. The standards are defined in
@@ -534,8 +534,7 @@ class SpacegroupAnalyzer:
         299-312. doi:10.1016/j.commatsci.2010.05.010.
 
         Args:
-            international_monoclinic (bool): Whether to convert to proper international convention
-                such that beta is the non-right angle. Unused.
+            international_monoclinic (bool): Deprecated.
 
         Returns:
             Transformation matrix to go from conventional to primitive cell.
@@ -545,6 +544,15 @@ class SpacegroupAnalyzer:
             is expected. Therefore, the transformation matrix C->P is returned.
             All matrices have a positive determinant and therefore have no reflection component.
         """
+        # TODO: Remove deprecated keyword once enough time passed
+        # Unused since 2026.7.16, deprecated after 2026.7.27
+        if international_monoclinic is not None:
+            warnings.warn(
+                "international_monoclinic has no effect, is deprecated and will be removed in a future version.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         space_group = self.get_space_group_symbol()
 
         if space_group.startswith("P"):
