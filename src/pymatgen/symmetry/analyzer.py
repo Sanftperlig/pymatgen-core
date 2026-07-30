@@ -543,6 +543,7 @@ class SpacegroupAnalyzer:
         Notes:
             Note that for face-centered space groups (C-/A-centered), standardization to C-centering
             is expected. Therefore, the transformation matrix C->P is returned.
+            All matrices have a positive determinant and therefore have no reflection component.
         """
         space_group = self.get_space_group_symbol()
 
@@ -550,8 +551,9 @@ class SpacegroupAnalyzer:
             return np.eye(3, dtype=np.float64)
 
         # Hexagonal to rhombohedral - for S/C orientation see get_primitive_standard_structure
+        # Matches spglib (transposed for row lattice vectors)
         if space_group.startswith("R"):
-            return np.array([[-1, 1, 1], [2, 1, 1], [-1, -2, 1]], dtype=np.float64) / 3
+            return np.array([[2, 1, 1], [-1, 1, 1], [-1, -2, 1]], dtype=np.float64) / 3
 
         # Setyawan/Curtarolo A.3/A.5/A.8
         if space_group.startswith("I"):
@@ -607,9 +609,7 @@ class SpacegroupAnalyzer:
         if sg_symbol.startswith("P"):
             return conv
 
-        transf = self.get_conventional_to_primitive_transformation_matrix(
-            international_monoclinic=international_monoclinic
-        )
+        transf = self.get_conventional_to_primitive_transformation_matrix()
 
         new_sites: list[PeriodicSite] = []
         prim_lattice = Lattice(transf @ conv.lattice.matrix)
@@ -667,7 +667,7 @@ class SpacegroupAnalyzer:
 
         Args:
             international_monoclinic (bool): Whether to convert to proper international convention
-                such that beta is the non-right angle.
+                such that beta is the non-right angle. Otherwise it will be alpha.
             keep_site_properties (bool): Whether to keep the input site properties (including
                 magnetic moments) on the sites that are still present after the refinement. Note:
                 This is disabled by default because the magnetic moments are not always directly
