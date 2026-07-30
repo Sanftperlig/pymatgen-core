@@ -598,7 +598,8 @@ class SpacegroupAnalyzer:
             keep_site_properties=keep_site_properties,
         )
 
-        if self.get_space_group_symbol().startswith("P"):
+        sg_symbol = self.get_space_group_symbol()
+        if sg_symbol.startswith("P"):
             return conv
 
         transf = self.get_conventional_to_primitive_transformation_matrix(
@@ -606,44 +607,42 @@ class SpacegroupAnalyzer:
         )
 
         new_sites: list[PeriodicSite] = []
-        lattice = Lattice(transf @ conv.lattice.matrix)
+        prim_lattice = Lattice(transf @ conv.lattice.matrix)
         for site in conv:
             new_s = PeriodicSite(
                 site.species,
                 site.coords,
-                lattice,
+                prim_lattice,
                 to_unit_cell=True,
                 coords_are_cartesian=True,
                 properties=site.properties,
             )
+            # Remove duplicate sites
             if not any(map(new_s.is_periodic_image, new_sites)):
                 new_sites.append(new_s)
 
-        if self.get_lattice_type() == "rhombohedral":
-            a = lattice.a
-            alpha = math.radians(lattice.alpha)
-            new_matrix = [
-                [a * cos(alpha / 2), -a * sin(alpha / 2), 0],
-                [a * cos(alpha / 2), a * sin(alpha / 2), 0],
-                [
-                    a * cos(alpha) / cos(alpha / 2),
-                    0,
-                    a * math.sqrt(1 - (cos(alpha) ** 2 / (cos(alpha / 2) ** 2))),
-                ],
-            ]
-            rhomb_sites = []
-            lattice = Lattice(new_matrix)
+        # Reorient rhombohedral lattices (keep sites & frac. coordinates)
+        # (to match Setyawan/Curtarolo convention)
+        if sg_symbol.startswith("R"):
+            a = prim_lattice.a
+            alpha = math.radians(prim_lattice.alpha)
+            cos_alpha = math.cos(alpha)
+            cos_alpha_h = math.cos(alpha / 2)
+            cos_fraction = cos_alpha / cos_alpha_h
+            a_sin_alpha_h = a * math.sin(alpha / 2)
+            new_matrix = (
+                (a * cos_alpha_h, -a_sin_alpha_h, 0.0),
+                (a * cos_alpha_h, a_sin_alpha_h, 0.0),
+                (
+                    a * cos_fraction,
+                    0.0,
+                    a * math.sqrt(1 - cos_fraction * cos_fraction),
+                ),
+            )
+            prim_lattice = Lattice(new_matrix)
+            # Edit the lattice in-place (sites are created above)
             for site in new_sites:
-                new_s = PeriodicSite(
-                    site.species,
-                    site.frac_coords,
-                    lattice,
-                    to_unit_cell=True,
-                    properties=site.properties,
-                )
-                if not any(map(new_s.is_periodic_image, new_sites)):
-                    rhomb_sites.append(new_s)
-            new_sites = rhomb_sites
+                site.lattice = prim_lattice
 
         return Structure.from_sites(new_sites)
 
