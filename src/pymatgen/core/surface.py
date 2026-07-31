@@ -1287,21 +1287,15 @@ class SlabGenerator:
         # As representative z coordinate, choose the arithmetic mean of the atom fractional z-coordinates
         cluster_zs = sorted(pbc_mean(frac_coords[clusters == cluster_idx, 2]) for cluster_idx in np.unique(clusters))
 
-        # Calculate terminations from ascending cluster z (which is in [0, 1))
-        n_terms = len(cluster_zs)
-        terminations: list[float] = []
-        for idx in range(n_terms):
-            # Handle the special case for the first-last pair of
-            # z coordinates (because of periodic boundary condition)
-            if idx == n_terms - 1:
-                termination = (cluster_zs[0] + 1 + cluster_zs[idx]) * 0.5
-            else:
-                termination = (cluster_zs[idx] + cluster_zs[idx + 1]) * 0.5
+        # Calculate terminations from ascending cluster z (which is in [0, 1)):
+        # Calculate centers between all sequential cluster zs
+        terminations = [0.5 * (cluster_zs[i] + cluster_zs[i + 1]) for i in range(len(cluster_zs) - 1)]
+        # Add the last-first pair, which needs PBC (as first + 1 is outside 0-1)
+        terminations.append((0.5 * (cluster_zs[0] + 1 + cluster_zs[-1])) % 1.0)
 
-            # Wrap termination to [0, 1) range
-            terminations.append(termination - math.floor(termination))
-
-        return sorted(terminations)
+        # Sort to insert the last-first pair at the correct location
+        terminations.sort()
+        return terminations
 
     def get_slabs(
         self,
