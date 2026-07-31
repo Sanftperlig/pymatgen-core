@@ -1247,22 +1247,34 @@ class SlabGenerator:
         Returns:
             termination_shifts (list[float]): Shifts for terminations that avoid breaking atom clusters.
         """
+
+        def pbc_mean(frac_z_coord: NDArray) -> float:
+            """Circular mean: Means fractional z coordinates, even across PBC boundaries."""
+            # Angle is periodic in the 0 to 2pi range -> 0 to 1 via *2pi
+            equiv_angle = 2.0 * np.pi * (frac_z_coord)
+            # Compute mean over e^(i*angle)
+            mean = np.mean(np.exp(1j * equiv_angle))
+            # Re-transform mean to angle and then z-coordinate
+            # np.angle returns (-pi, pi] => (-0.5, 0.5] - apply PBC for [0, 1)
+            return float(np.mod(np.angle(mean) / (2.0 * np.pi), 1.0))
+
         frac_coords = self.oriented_unit_cell.frac_coords
         n_atoms = len(frac_coords)
 
-        # Skip clustering when there is only one atom
-        if n_atoms == 1:
-            # Put the atom to the center
-            termination = frac_coords[0][2] + 0.5
-            return [termination - math.floor(termination)]
         # For safety, stop empty Structures from progressing further
         if n_atoms == 0:
             return []
+        # Skip clustering when there is only one atom
+        if n_atoms == 1:
+            # Put the atom to the center
+            termination = frac_coords[0, 2] + 0.5
+            return [termination - math.floor(termination)]
 
         # Compute a Cartesian z-coordinate distance matrix
         dist_matrix = np.zeros((n_atoms, n_atoms), dtype=np.float64)
         for i, j in itertools.combinations(range(n_atoms), 2):
-            z_dist = frac_coords[i][2] - frac_coords[j][2]
+            z_dist = frac_coords[i, 2] - frac_coords[j, 2]
+            # Apply PBC and project onto surface normal
             z_dist = abs(z_dist - round(z_dist)) * self._proj_height
             dist_matrix[i, j] = z_dist
             dist_matrix[j, i] = z_dist
@@ -1271,22 +1283,20 @@ class SlabGenerator:
         z_matrix = linkage(squareform(dist_matrix))
         clusters = fcluster(z_matrix, ftol, criterion="distance")
 
-        # Generate cluster to z-coordinate mapping
-        clst_loc: dict[np.int32, float] = {clst: frac_coords[idx][2] for idx, clst in enumerate(clusters)}
+        # Generate cluster to z-coordinate mapping including PBC
+        # As representative z coordinate, choose the arithmetic mean of the atom fractional z-coordinates
+        cluster_zs = sorted(pbc_mean(frac_coords[clusters == cluster_idx, 2]) for cluster_idx in np.unique(clusters))
 
-        # Wrap all clusters into the unit cell ([0, 1) range)
-        possible_clst: list[float] = sorted(coord - math.floor(coord) for coord in clst_loc.values())
-
-        # Calculate terminations
-        n_terms = len(possible_clst)
+        # Calculate terminations from ascending cluster z (which is in [0, 1))
+        n_terms = len(cluster_zs)
         terminations: list[float] = []
         for idx in range(n_terms):
             # Handle the special case for the first-last pair of
             # z coordinates (because of periodic boundary condition)
             if idx == n_terms - 1:
-                termination = (possible_clst[0] + 1 + possible_clst[idx]) * 0.5
+                termination = (cluster_zs[0] + 1 + cluster_zs[idx]) * 0.5
             else:
-                termination = (possible_clst[idx] + possible_clst[idx + 1]) * 0.5
+                termination = (cluster_zs[idx] + cluster_zs[idx + 1]) * 0.5
 
             # Wrap termination to [0, 1) range
             terminations.append(termination - math.floor(termination))
