@@ -20,6 +20,7 @@ import logging
 import math
 import os
 import warnings
+from fractions import Fraction
 from functools import reduce
 from typing import TYPE_CHECKING, Literal, cast, overload
 
@@ -2275,18 +2276,18 @@ def _is_in_miller_family(
 
 
 def hkl_transformation(
-    transf: np.ndarray,
-    miller_index: tuple[int, ...],
+    transf: NDArray,
+    miller_index: tuple[int, ...] | NDArray,
 ) -> tuple[int, int, int]:
     """Transform the Miller index from setting A to B with a transformation matrix.
 
     Args:
-        transf (3x3 array): The matrix that transforms a lattice from A to B.
-        miller_index (tuple[int, ...]): The Miller index [h, k, l] to transform.
+        transf (3x3 array): The matrix that transforms a lattice A to B via B = transf @ A.
+        miller_index (tuple[int, ...]): The Miller index (h, k, l) to transform.
     """
     # Convert the elements of the transformation matrix to integers
-    reduced_transf = reduce(math.lcm, [int(1 / i) for i in itertools.chain(*transf) if i != 0]) * transf
-    reduced_transf = reduced_transf.astype(int)
+    fractions = [Fraction(value).limit_denominator(100) for value in itertools.chain.from_iterable(transf)]
+    reduced_transf = np.rint(math.lcm(*(f.denominator for f in fractions)) * transf).astype(int)
 
     # Perform the transformation
     transf_hkl = np.dot(reduced_transf, miller_index)
