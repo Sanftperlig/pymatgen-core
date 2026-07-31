@@ -2277,25 +2277,27 @@ def _is_in_miller_family(
 
 def hkl_transformation(
     transf: NDArray,
-    miller_index: tuple[int, ...] | NDArray,
+    miller_index: tuple[int, int, int] | NDArray,
 ) -> tuple[int, int, int]:
     """Transform the Miller index from setting A to B with a transformation matrix.
 
     Args:
         transf (3x3 array): The matrix that transforms a lattice A to B via B = transf @ A.
-        miller_index (tuple[int, ...]): The Miller index (h, k, l) to transform.
+        miller_index (tuple[int, int, int]): The Miller index (h, k, l) to transform.
+
+    Returns:
+        transformed_miller_index (tuple[int, int, int]): The Miller index in setting B.
     """
     # Convert the elements of the transformation matrix to integers
     fractions = [Fraction(value).limit_denominator(100) for value in itertools.chain.from_iterable(transf)]
     reduced_transf = np.rint(math.lcm(*(f.denominator for f in fractions)) * transf).astype(int)
 
     # Perform the transformation
-    transf_hkl = np.dot(reduced_transf, miller_index)
-    divisor = abs(reduce(math.gcd, transf_hkl))  # type: ignore[arg-type]
-    transf_hkl = np.array([idx // divisor for idx in transf_hkl])
+    transf_hkl = reduced_transf @ np.asarray(miller_index, dtype=int)
+    transf_hkl //= math.gcd(*transf_hkl)
 
-    # Get positive Miller index
-    if sum(idx < 0 for idx in transf_hkl) > 1:
+    # Get positive Miller index (first nonzero index positive)
+    if next(index for index in transf_hkl if index != 0):
         transf_hkl *= -1
 
     return tuple(transf_hkl)
