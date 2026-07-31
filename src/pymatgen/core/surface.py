@@ -2275,7 +2275,7 @@ def _is_in_miller_family(
     return any(in_coord_list(miller_list, op.operate(miller_index)) for op in symm_ops)
 
 
-def _index_transformation(transf: NDArray, index: tuple[int, int, int] | NDArray):
+def _index_transformation(transf: NDArray, index: tuple[int, int, int] | NDArray) -> NDArray[int]:
     """Transforms a given index via transf @ index, while avoiding floats."""
     # Convert the elements of the transformation matrix to integers
     fractions = [Fraction(value).limit_denominator(100) for value in itertools.chain.from_iterable(transf)]
@@ -2304,10 +2304,10 @@ def hkl_transformation(transf: NDArray, miller_index: tuple[int, int, int] | NDA
     if next(index for index in transf_hkl if index != 0) < 0:
         transf_hkl *= -1
 
-    return tuple(transf_hkl)
+    return cast("tuple[int, int, int]", tuple(transf_hkl))
 
 
-def uvw_transformation(transf: NDArray, uvw: tuple[int, int, int] | NDArray):
+def uvw_transformation(transf: NDArray, uvw: tuple[int, int, int] | NDArray) -> tuple[int, int, int]:
     """Transform the direction index (uvw) from setting A to B with a transformation matrix.
 
     Args:
@@ -2317,7 +2317,7 @@ def uvw_transformation(transf: NDArray, uvw: tuple[int, int, int] | NDArray):
     Returns:
         transformed_direction_index (tuple[int, int, int]): The direction index in setting B.
     """
-    return tuple(_index_transformation(np.linalg.inv(transf).T, uvw))
+    return cast("tuple[int, int, int]", tuple(_index_transformation(np.linalg.inv(transf).T, uvw)))
 
 
 def miller_index_from_sites(
