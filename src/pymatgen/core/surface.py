@@ -1251,10 +1251,13 @@ class SlabGenerator:
         n_atoms = len(frac_coords)
 
         # Skip clustering when there is only one atom
-        if n_atoms < 2:
+        if n_atoms == 1:
             # Put the atom to the center
             termination = frac_coords[0][2] + 0.5
             return [termination - math.floor(termination)]
+        # For safety, stop empty Structures from progressing further
+        if n_atoms == 0:
+            return []
 
         # Compute a Cartesian z-coordinate distance matrix
         dist_matrix = np.zeros((n_atoms, n_atoms), dtype=np.float64)
