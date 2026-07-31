@@ -1256,14 +1256,12 @@ class SlabGenerator:
             return [termination - math.floor(termination)]
 
         # Compute a Cartesian z-coordinate distance matrix
-        # TODO (@DanielYang59): account for periodic boundary condition
         dist_matrix = np.zeros((n_atoms, n_atoms), dtype=np.float64)
         for i, j in itertools.combinations(range(n_atoms), 2):
-            if i != j:
-                z_dist = frac_coords[i][2] - frac_coords[j][2]
-                z_dist = abs(z_dist - round(z_dist)) * self._proj_height
-                dist_matrix[i, j] = z_dist
-                dist_matrix[j, i] = z_dist
+            z_dist = frac_coords[i][2] - frac_coords[j][2]
+            z_dist = abs(z_dist - round(z_dist)) * self._proj_height
+            dist_matrix[i, j] = z_dist
+            dist_matrix[j, i] = z_dist
 
         # Cluster the sites by z coordinates
         z_matrix = linkage(squareform(dist_matrix))
