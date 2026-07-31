@@ -1236,15 +1236,16 @@ class SlabGenerator:
             energy=energy,
         )
 
-    def gen_possible_terminations(self, ftol: float) -> list[float]:
+    def gen_possible_terminations(self, ftol: float = 0.1) -> list[float]:
         """Generate possible terminations by clustering z coordinates.
 
         Args:
-            ftol (float): Threshold for fcluster to check if
-                two atoms are on the same plane.
+            ftol (float): Threshold (in the lattice length unit) for fcluster to check if
+                two atoms are on the same plane. Atoms count as part of the cluster if their
+                distance in the surface normal to the next cluster atom is no larger than `ftol`.
 
         Returns:
-            termination_shifts (list[float]): Shifts for terminations that
+            termination_shifts (list[float]): Shifts for terminations that avoid breaking atom clusters.
         """
         frac_coords = self.oriented_unit_cell.frac_coords
         n_atoms = len(frac_coords)
@@ -1271,7 +1272,7 @@ class SlabGenerator:
         clst_loc: dict[np.int32, float] = {clst: frac_coords[idx][2] for idx, clst in enumerate(clusters)}
 
         # Wrap all clusters into the unit cell ([0, 1) range)
-        possible_clst: list[float] = [coord - math.floor(coord) for coord in sorted(clst_loc.values())]
+        possible_clst: list[float] = sorted(coord - math.floor(coord) for coord in clst_loc.values())
 
         # Calculate terminations
         n_terms = len(possible_clst)
