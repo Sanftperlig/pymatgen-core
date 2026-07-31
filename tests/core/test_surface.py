@@ -878,9 +878,11 @@ class TestMillerIndexFinder(MatSciTest):
             167, Lattice.hexagonal(5, 7), ("Ca", "C", "O"), ((0, 0, 0), (0, 0, 0.25), (0.25, 0, 0.25))
         )
 
+        matrix = SpacegroupAnalyzer(struct).get_conventional_to_primitive_transformation_matrix()
+
         # Both have gcd 3: (6, 3, 3) and [3, -3, -3]
-        assert hkl_transformation(struct, (1, 0, 4)) == (2, 1, 1)
-        assert uvw_transformation(struct, (4, 2, -1)) == (1, -1, -1)
+        assert hkl_transformation(matrix, (1, 0, 4)) == (2, 1, 1)
+        assert uvw_transformation(matrix, (4, 2, -1)) == (1, -1, -1)
 
     def test_get_symmetrically_equivalent_miller_indices(self):
         # Tests to see if the function obtains all equivalent hkl for cubic (100)
