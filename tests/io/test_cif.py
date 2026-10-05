@@ -1028,7 +1028,6 @@ Si1 Si 0 0 0 1 0.0
 
         # Generate a cif with all sites
         file = CifWriter(thirds_struct, significant_figures=4, refine_struct=False).cif_file
-        print(file)
 
         # Read the cif: Correct: All sites merge via PBC. Incorrect: Two sites (one at 0.333, one at 1/3).
         parsed = CifParser.from_str(str(file), frac_tolerance=0.0001, occupancy_tolerance=1 + 1e-10).parse_structures()
