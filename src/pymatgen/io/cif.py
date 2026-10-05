@@ -1547,20 +1547,23 @@ class CifParser:
         return failure_reason
 
 
-def str2float(text: str) -> float:
+def str2float(text: str | list[str]) -> float:
     """Remove uncertainty brackets from strings and return the float."""
     try:
         # Note that the ending ) is sometimes missing. That is why the code has
         # been modified to treat it as optional. Same logic applies to lists.
-        return float(re.sub(r"\(.+\)*", "", text))
+        return float(re.sub(r"\(.+\)*", "", cast("str", text)))
 
     except TypeError:
         if isinstance(text, list) and len(text) == 1:
-            return float(re.sub(r"\(.+\)*", "", text[0]))
+            try:
+                return float(re.sub(r"\(.+\)*", "", text[0]))
+            except TypeError:
+                pass
 
     except ValueError:
         if text.strip() == ".":
-            return 0
+            return 0.0
         raise
     raise ValueError(f"{text!s} cannot be converted to float")
 
