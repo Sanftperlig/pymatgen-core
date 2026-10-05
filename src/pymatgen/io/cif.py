@@ -610,7 +610,7 @@ class CifParser:
             for idx, value in enumerate(data.data[label]):
                 try:
                     frac = str2float(value)
-                except Exception:
+                except ValueError:
                     # Coordinate might not be defined, e.g. '?'
                     continue
 
