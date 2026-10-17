@@ -36,7 +36,7 @@ from typing import (
 import numpy as np
 import orjson
 from monty.dev import deprecated
-from monty.json import MSONable
+from monty.json import MontyDecoder, MSONable
 from tabulate import tabulate
 
 # scipy.cluster.hierarchy, scipy.linalg, and scipy.spatial are imported
@@ -152,7 +152,10 @@ class Neighbor(Site):
         Returns:
             Neighbor
         """
-        return cast("Site", super(Site, cls).from_dict(dct))
+        decoded = {key: MontyDecoder().process_decoded(val) for key, val in dct.items() if not key.startswith("@")}
+        decoded["species"] = Composition(decoded["species"])
+        decoded["coords"] = np.asarray(decoded["coords"])
+        return cls(**decoded)
 
 
 class PeriodicNeighbor(PeriodicSite):
@@ -4343,17 +4346,17 @@ class Structure(IStructure, MutableSequence[PeriodicSite]):
 
         return self
 
-    def remove_sites(self, indices: Sequence[SupportsIndex | None]) -> Self:
-        """Delete sites with at indices.
+    def remove_sites(self, indices: Iterable[SupportsIndex | None]) -> Self:
+        """Remove sites at the given indices.
 
         Args:
-            indices: Sequence of indices of sites to delete.
+            indices: Iterable of indices. Ignores None and negative values.
 
         Returns:
-            Structure: self with sites removed.
+            Structure: self with relevant sites removed.
         """
-        self.sites = [site for idx, site in enumerate(self) if idx not in indices]
-
+        remove = {v.__index__() for v in indices if v is not None}
+        self._sites = [site for idx, site in enumerate(self._sites) if idx not in remove]
         return self
 
     def apply_operation(self, symm_op: SymmOp, fractional: bool = False) -> Self:
@@ -4824,7 +4827,7 @@ class Structure(IStructure, MutableSequence[PeriodicSite]):
                     "Fm-3m",
                     Lattice.cubic(kwargs["a"]),
                     species,
-                    [[0, 0, 0], [0.5, 0.5, 0]],
+                    [[0, 0, 0], [0.5, 0.5, 0.5]],
                 )
             if prototype == "perovskite":
                 return cls.from_spacegroup(
